@@ -1,0 +1,48 @@
+language: cpp
+os:
+- linux
+- osx
+
+dist: trusty
+sudo: required
+
+osx_image: xcode7.3
+
+compiler:
+- clang
+- gcc
+
+addons:
+  apt:
+    packages:
+    - cmake
+    - libboost-filesystem-dev
+    - libboost-regex-dev
+    - libboost-system-dev
+    - libboost-thread-dev
+    - libssl-dev
+    - libyaml-cpp-dev
+    - mongodb-server
+
+before_install:
+- |
+  if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+    brew update;
+    brew outdated boost || brew upgrade boost;
+    brew install openssl && export OPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2j/
+    brew install yaml-cpp;
+    brew install mongodb;
+  fi
+
+install:
+- OLD_PWD=$PWD
+- cd ~/build && wget https://github.com/mongodb/libbson/releases/download/1.5.0/libbson-1.5.0.tar.gz && tar xzf libbson-1.5.0.tar.gz && cd libbson-1.5.0 && ./configure && make && sudo make install
+- cd ~/build && wget https://github.com/mongodb/mongo-c-driver/releases/download/1.5.0/mongo-c-driver-1.5.0.tar.gz && tar xzf mongo-c-driver-1.5.0.tar.gz && cd mongo-c-driver-1.5.0 && ./configure && make && sudo make install
+- cd ~/build && git clone https://github.com/mongodb/mongo-cxx-driver && cd mongo-cxx-driver/build && git checkout releases/stable && cmake .. && make && make install && sudo cp -r install/* /usr/local
+- cd $OLD_PWD
+
+# Workaround for https://svn.boost.org/trac/boost/ticket/7473
+before_script:
+- 'if [[ "$CXX" == "clang++" && "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install wget && sudo wget -O /usr/include/boost/config/stdlib/libstdcpp3.hpp https://raw.githubusercontent.com/boostorg/config/b36566fe04a89103b7ef5569c03e3a26eb77af36/include/boost/config/stdlib/libstdcpp3.hpp; fi'
+
+script: cd build && cmake .. && make && env CTEST_OUTPUT_ON_FAILURE=1 make test
