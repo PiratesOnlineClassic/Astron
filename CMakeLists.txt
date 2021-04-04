@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.8.9 FATAL_ERROR) # Required for FindBoost
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 project(Astron)
 
+cmake_policy(SET CMP0074 OLD)
+
 find_package(PythonLibs)
 find_package(PythonInterp)
 if(PYTHONINTERP_FOUND)
