@@ -10,5 +10,6 @@ COPY . /app
 WORKDIR /app
 
 # Build Astron and set our application entrypoint
+RUN mkdir build
 RUN cd build && cmake .. && make
 ENTRYPOINT [ "./build/astrond" ]
