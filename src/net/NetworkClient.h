@@ -153,7 +153,7 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
     boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *m_secure_socket;
     boost::asio::ip::tcp::endpoint m_remote;
     boost::asio::ip::tcp::endpoint m_local;
-    boost::asio::deadline_timer m_async_timer;
+    boost::asio::steady_timer m_async_timer;
     uint8_t m_size_buf[sizeof(dgsize_t)];
     uint8_t* m_data_buf = nullptr;
     dgsize_t m_data_size = 0;

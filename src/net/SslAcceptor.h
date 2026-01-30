@@ -11,7 +11,7 @@ SslAcceptorCallback;
 class SslAcceptor : public NetworkAcceptor
 {
   public:
-    SslAcceptor(boost::asio::io_service &io_service, ssl::context& ctx,
+    SslAcceptor(boost::asio::io_context &io_service, ssl::context& ctx,
                 SslAcceptorCallback &callback);
 
     inline void set_handshake_timeout(int milliseconds)

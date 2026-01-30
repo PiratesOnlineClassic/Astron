@@ -3,7 +3,7 @@
 #include <boost/asio/ip/address.hpp>
 #include <boost/filesystem.hpp>
 using namespace std;
-namespace filesystem = boost::filesystem;
+namespace boost_fs = boost::filesystem;
 
 bool is_not_invalid_doid(const doid_t& c)
 {
@@ -32,7 +32,7 @@ bool is_boolean_keyword(const string& str)
 
 bool is_existing_and_readable_file(const std::string& file)
 {
-    return filesystem::exists(file);
+    return boost_fs::exists(file);
 
     // TODO: Check whether readable
 }

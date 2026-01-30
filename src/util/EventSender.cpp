@@ -4,7 +4,7 @@
 #include "net/address_utils.h"
 
 EventSender::EventSender() : m_log("eventsender", "Event Sender"),
-    m_socket(io_service, udp::v4()), m_enabled(false)
+    m_socket(g_io_context, udp::v4()), m_enabled(false)
 {
 
 }
@@ -19,7 +19,7 @@ void EventSender::init(const std::string& target)
 
     m_log.debug() << "Resolving target..." << std::endl;
     boost::system::error_code ec;
-    auto addresses = resolve_address(target, 7197, io_service, ec);
+    auto addresses = resolve_address(target, 7197, g_io_context, ec);
     if(ec.value() != 0) {
         m_log.fatal() << "Couldn't resolve " << target << std::endl;
         exit(1);

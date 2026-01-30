@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <functional>
 #include <boost/icl/interval_bounds.hpp>
+#include <boost/asio/io_context.hpp>
 
 #include "core/global.h"
 #include "core/msgtypes.h"
@@ -51,7 +52,7 @@ void MessageDirector::init_network()
 
             TcpAcceptorCallback callback = std::bind(&MessageDirector::handle_connection,
                                            this, std::placeholders::_1);
-            m_net_acceptor = std::unique_ptr<TcpAcceptor>(new TcpAcceptor(io_service, callback));
+            m_net_acceptor = std::unique_ptr<TcpAcceptor>(new TcpAcceptor(g_io_context, callback));
             boost::system::error_code ec;
             ec = m_net_acceptor->bind(bind_addr.get_val(), 7199);
             if(ec.value() != 0) {
@@ -123,7 +124,7 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle d
     } else if(std::this_thread::get_id() != m_main_thread) {
         // We aren't working in threaded mode, but we aren't in the main thread
         // either. For safety, we should post this down to the main thread.
-        io_service.post(boost::bind(&MessageDirector::process_datagram, this, p, dg));
+        boost::asio::post(g_io_context, boost::bind(&MessageDirector::process_datagram, this, p, dg));
     } else {
         // Main thread; we can just process it here.
         process_datagram(p, dg);

@@ -2,7 +2,7 @@
 #include "HAProxyHandler.h"
 #include <boost/bind.hpp>
 
-TcpAcceptor::TcpAcceptor(boost::asio::io_service &io_service,
+TcpAcceptor::TcpAcceptor(boost::asio::io_context &io_service,
                          TcpAcceptorCallback &callback) :
     NetworkAcceptor(io_service),
     m_callback(callback)

@@ -12,7 +12,7 @@
 #include "util/password_prompt.h"
 using namespace std;
 namespace ssl = boost::asio::ssl;
-namespace filesystem = boost::filesystem;
+namespace boost_fs = boost::filesystem;
 
 RoleConfigGroup clientagent_config("clientagent");
 static ConfigVariable<string> bind_addr("bind", "0.0.0.0:7198", clientagent_config);
@@ -103,7 +103,7 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
                                        std::placeholders::_1,
                                        std::placeholders::_2,
                                        std::placeholders::_3);
-        m_net_acceptor = std::unique_ptr<TcpAcceptor>(new TcpAcceptor(io_service, callback));
+        m_net_acceptor = std::unique_ptr<TcpAcceptor>(new TcpAcceptor(g_io_context, callback));
     }
 
     // Handle SSL requested, but some information missing
@@ -162,7 +162,7 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
         // Set the certificate authority
         string auth_file = tls_auth.get_rval(tls_settings);
         if(!auth_file.empty()) {
-            if(filesystem::is_directory(auth_file)) {
+        if(boost_fs::is_directory(auth_file)) {
                 m_ssl_ctx.add_verify_path(auth_file);
             } else {
                 m_ssl_ctx.load_verify_file(auth_file);
@@ -176,7 +176,7 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
                                        std::placeholders::_1,
                                        std::placeholders::_2,
                                        std::placeholders::_3);
-        std::unique_ptr<SslAcceptor> ssl_acceptor(new SslAcceptor(io_service, m_ssl_ctx, callback));
+        std::unique_ptr<SslAcceptor> ssl_acceptor(new SslAcceptor(g_io_context, m_ssl_ctx, callback));
 
         // Set SSL handshake timeout.
         ssl_acceptor->set_handshake_timeout(tls_handshake_timeout.get_rval(tls_settings));

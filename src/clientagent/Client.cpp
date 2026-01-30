@@ -878,7 +878,7 @@ void InterestOperation::finish(bool is_timeout)
     // N. B. We need to delete the pending interest before we send queued
     //       datagrams, so that they aren't just re-added to the queue.
     //       Move the queued datagrams to the stack so it is safe to delete the Operation.
-    list<DatagramHandle> dispatch = move(m_pending_datagrams);
+    list<DatagramHandle> dispatch = std::move(m_pending_datagrams);
 
     // Delete the Interest Operation
     m_client->m_pending_interests.erase(m_request_context);

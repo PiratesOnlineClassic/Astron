@@ -32,7 +32,7 @@ class Timeout : public std::enable_shared_from_this<Timeout>
 
 
   private:
-    boost::asio::deadline_timer m_timer;
+    boost::asio::steady_timer m_timer;
     std::function<void()> m_callback;
     long m_timeout_interval;
 

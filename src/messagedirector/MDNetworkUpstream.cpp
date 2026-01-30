@@ -14,7 +14,7 @@ MDNetworkUpstream::MDNetworkUpstream(MessageDirector *md) :
 
 boost::system::error_code MDNetworkUpstream::connect(const std::string &address)
 {
-    NetworkConnector connector(io_service);
+    NetworkConnector connector(g_io_context);
     boost::system::error_code ec;
     tcp::socket *socket = connector.connect(address, 7199, ec);
 

@@ -275,11 +275,11 @@ void HAProxyHandler::parse_v1()
     address local_address;
 
     if(!strcmp(tcp, "TCP4")) {
-        remote_address = address_v4::from_string(srcip);
-        local_address = address_v4::from_string(dstip);
+        remote_address = make_address_v4(srcip);
+        local_address = make_address_v4(dstip);
     } else if(!strcmp(tcp, "TCP6")) {
-        remote_address = address_v6::from_string(srcip);
-        local_address = address_v6::from_string(dstip);
+        remote_address = make_address_v6(srcip);
+        local_address = make_address_v6(dstip);
     } else {
         boost::system::error_code eproto(boost::system::errc::errc_t::protocol_error,
                                          boost::system::system_category());

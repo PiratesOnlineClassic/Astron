@@ -20,12 +20,12 @@ class NetworkAcceptor
     }
 
   protected:
-    boost::asio::io_service &m_io_service;
+    boost::asio::io_context &m_io_service;
     tcp::acceptor m_acceptor;
     bool m_started;
     bool m_haproxy_mode = false;
 
-    NetworkAcceptor(boost::asio::io_service&);
+    NetworkAcceptor(boost::asio::io_context&);
 
     virtual void start_accept() = 0;
 };

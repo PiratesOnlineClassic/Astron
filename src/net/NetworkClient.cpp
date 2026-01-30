@@ -1,5 +1,6 @@
 #include "NetworkClient.h"
 #include <stdexcept>
+#include <chrono>
 #include <boost/bind.hpp>
 #include "core/global.h"
 #include "config/ConfigVariable.h"
@@ -9,7 +10,7 @@ namespace ssl = boost::asio::ssl;
 
 NetworkClient::NetworkClient(NetworkHandler *handler) : m_handler(handler), m_socket(nullptr),
     m_secure_socket(nullptr),
-    m_async_timer(io_service), m_send_queue()
+    m_async_timer(g_io_context), m_send_queue()
 {
 }
 
@@ -330,7 +331,7 @@ void NetworkClient::socket_write(const uint8_t* buf, size_t length, std::unique_
 {
     // Start async timeout, a value of 0 indicates the writes shouldn't timeout (used in debugging)
     if(m_write_timeout > 0) {
-        m_async_timer.expires_from_now(boost::posix_time::milliseconds(m_write_timeout));
+        m_async_timer.expires_after(std::chrono::milliseconds(m_write_timeout));
         m_async_timer.async_wait(boost::bind(&NetworkClient::send_expired, shared_from_this(),
                                              boost::asio::placeholders::error));
     }

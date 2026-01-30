@@ -1,6 +1,9 @@
 #include "address_utils.h"
 
 #include <algorithm>
+#include <boost/asio.hpp>
+
+using namespace boost::asio::ip;
 
 static bool split_port(std::string &ip, uint16_t &port)
 {
@@ -33,12 +36,12 @@ static bool split_port(std::string &ip, uint16_t &port)
     return true;
 }
 
-static address parse_address(const std::string &ip, boost::system::error_code &ec)
+static address parse_address(const std::string &ip_str, boost::system::error_code &ec)
 {
-    if(ip[0] == '[' && ip[ip.length() - 1] == ']') {
-        return address::from_string(ip.substr(1, ip.length() - 2), ec);
+    if(ip_str[0] == '[' && ip_str[ip_str.length() - 1] == ']') {
+        return boost::asio::ip::make_address(ip_str.substr(1, ip_str.length() - 2), ec);
     } else {
-        return address::from_string(ip, ec);
+        return boost::asio::ip::make_address(ip_str, ec);
     }
 }
 
@@ -99,7 +102,7 @@ bool is_valid_address(const std::string &hostspec)
 
 std::vector<tcp::endpoint> resolve_address(
     const std::string &hostspec, uint16_t port,
-    boost::asio::io_service &io_service, boost::system::error_code &ec)
+    boost::asio::io_context &io_service, boost::system::error_code &ec)
 {
     std::vector<tcp::endpoint> ret;
 
@@ -115,13 +118,10 @@ std::vector<tcp::endpoint> resolve_address(
         ret.push_back(ep);
     } else {
         tcp::resolver resolver(io_service);
-        tcp::resolver::query query(host, std::to_string(port));
+        auto results = resolver.resolve(host, std::to_string(port), ec);
 
-        tcp::resolver::iterator it = resolver.resolve(query, ec);
-        tcp::resolver::iterator end;
-
-        while(it != end) {
-            ret.push_back(*it++);
+        for(auto& ep : results) {
+            ret.push_back(ep);
         }
     }
 

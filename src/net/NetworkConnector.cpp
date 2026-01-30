@@ -1,7 +1,7 @@
 #include "NetworkConnector.h"
 #include "address_utils.h"
 
-NetworkConnector::NetworkConnector(boost::asio::io_service &io_service) : m_io_service(io_service)
+NetworkConnector::NetworkConnector(boost::asio::io_context &io_service) : m_io_service(io_service)
 {
 }
 

@@ -1,8 +1,9 @@
 #include "NetworkAcceptor.h"
 #include "address_utils.h"
 #include <boost/bind.hpp>
+#include <sys/socket.h>
 
-NetworkAcceptor::NetworkAcceptor(boost::asio::io_service& io_service) :
+NetworkAcceptor::NetworkAcceptor(boost::asio::io_context& io_service) :
     m_io_service(io_service),
     m_acceptor(io_service),
     m_started(false)
@@ -43,7 +44,7 @@ boost::system::error_code NetworkAcceptor::bind(const std::string &address,
         return ec;
     }
 
-    m_acceptor.listen(tcp::socket::max_connections, ec);
+    m_acceptor.listen(SOMAXCONN, ec);
     if(ec.value() != 0) {
         return ec;
     }

@@ -7,7 +7,7 @@ typedef std::function<void(tcp::socket*, tcp::endpoint, tcp::endpoint)> TcpAccep
 class TcpAcceptor : public NetworkAcceptor
 {
   public:
-    TcpAcceptor(boost::asio::io_service &io_service,
+    TcpAcceptor(boost::asio::io_context &io_service,
                 TcpAcceptorCallback &callback);
     virtual ~TcpAcceptor() {}
 

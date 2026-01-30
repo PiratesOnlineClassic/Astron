@@ -2,7 +2,7 @@
 #include "HAProxyHandler.h"
 #include <boost/bind.hpp>
 
-SslAcceptor::SslAcceptor(boost::asio::io_service &io_service, ssl::context& ctx,
+SslAcceptor::SslAcceptor(boost::asio::io_context &io_service, ssl::context& ctx,
                          SslAcceptorCallback &callback) :
     NetworkAcceptor(io_service),
     m_context(ctx),

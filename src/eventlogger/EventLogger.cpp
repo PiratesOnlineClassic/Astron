@@ -33,13 +33,13 @@ void EventLogger::bind(const std::string &addr)
 {
     m_log.info() << "Opening UDP socket..." << std::endl;
     boost::system::error_code ec;
-    auto addresses = resolve_address(addr, 7197, io_service, ec);
+    auto addresses = resolve_address(addr, 7197, g_io_context, ec);
     if(ec.value() != 0) {
         m_log.fatal() << "Couldn't resolve " << addr << std::endl;
         exit(1);
     }
 
-    m_socket.reset((new udp::socket(io_service,
+    m_socket.reset((new udp::socket(g_io_context,
                         udp::endpoint(addresses[0].address(), addresses[0].port()))));
 }
 
