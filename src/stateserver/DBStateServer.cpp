@@ -121,6 +121,7 @@ void DBStateServer::handle_activate(DatagramIterator &dgi, bool has_other)
         const Class *dcc = g_dcf->get_class_by_id(dc_id);
         if(!dcc) {
             m_log->error() << "Tried to activate_other with non-class distributed_type #" << dc_id << "\n";
+            return;
         }
         auto load_it = m_inactive_loads.find(do_id);
         if(load_it == m_inactive_loads.end()) {
@@ -366,10 +367,13 @@ void DBStateServer::handle_get_fields(channel_t sender, DatagramIterator &dgi)
         uint16_t field_id = dgi.read_uint16();
         const Field* field = g_dcf->get_field_by_id(field_id);
         if(!field) {
+            // Bail out on the first unknown field so we don't emit multiple
+            // responses (and don't then proceed to also emit a success response).
             DatagramPtr dg = Datagram::create(sender, r_do_id, STATESERVER_OBJECT_GET_FIELDS_RESP);
             dg->add_uint32(r_context);
             dg->add_uint8(false);
             route_datagram(dg);
+            return;
         } else if(field->has_keyword("ram") || field->has_keyword("required")) {
             if(field->has_keyword("db")) {
                 db_fields.push_back(field);
@@ -531,6 +535,11 @@ void DBStateServer::handle_get_all_resp(DatagramIterator& dgi)
         return;
     }
     const Class* r_class = g_dcf->get_class_by_id(dc_id);
+    if(!r_class) {
+        m_log->error() << "Received object from database with unknown dclass id "
+                       << dc_id << std::endl;
+        return;
+    }
 
     // Get fields from database
     UnorderedFieldValues required_fields;
