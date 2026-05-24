@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.9 FATAL_ERROR) # Required for FindBoost
+cmake_minimum_required(VERSION 3.5 FATAL_ERROR) # Required for FindBoost
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 project(Astron)
 

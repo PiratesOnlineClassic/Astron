@@ -35,6 +35,8 @@ find_path(YAMLCPP_INCLUDE_DIR
     /Library/Frameworks/yaml-cpp/include/
     /usr/local/include/
     /usr/include/
+    /opt/homebrew/include/         # Homebrew (Apple Silicon)
+    /opt/homebrew/opt/yaml-cpp/include/
     /sw/yaml-cpp/         # Fink
     /opt/local/yaml-cpp/  # DarwinPorts
     /opt/csw/yaml-cpp/    # Blastwave
@@ -51,6 +53,8 @@ find_library(YAMLCPP_LIBRARY_RELEASE
     /Library/Frameworks
     /usr/local
     /usr
+    /opt/homebrew
+    /opt/homebrew/opt/yaml-cpp
     /sw
     /opt/local
     /opt/csw
@@ -67,6 +71,8 @@ find_library(YAMLCPP_LIBRARY_DEBUG
     /Library/Frameworks
     /usr/local
     /usr
+    /opt/homebrew
+    /opt/homebrew/opt/yaml-cpp
     /sw
     /opt/local
     /opt/csw

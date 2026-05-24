@@ -230,11 +230,19 @@ void HAProxyHandler::handle_v1(const boost::system::error_code &ec, size_t bytes
         // We can safely read at least 2 bytes. We also know that the finished
         // PROXY header will have 5 spaces, with at least one char before each
         // of the spaces. So we can read 2 + (5-number_of_spaces)*2 or
-        // 12 - number_of_spaces*2
+        // 12 - number_of_spaces*2.
+        // Guard against an attacker stuffing extra spaces, which would otherwise
+        // underflow read_size (size_t) below.
         read_size = 12;
-        for(uint8_t *i = m_header_buf; i < &m_header_buf[m_header_len]; i++)
-            if(*i == ' ')
+        for(uint8_t *i = m_header_buf; i < &m_header_buf[m_header_len]; i++) {
+            if(*i == ' ') {
+                if(read_size < 2) {
+                    read_size = 0;
+                    break;
+                }
                 read_size -= 2;
+            }
+        }
     }
 
     async_read(*m_socket,
@@ -247,7 +255,11 @@ void HAProxyHandler::handle_v1(const boost::system::error_code &ec, size_t bytes
 
 void HAProxyHandler::parse_v1()
 {
-    if((m_header_buf[m_header_len - 2] != '\r') ||
+    // We need at least "\r\n" to be a syntactically valid v1 header trailer.
+    // Without this guard, a stray '\n' on its own would cause m_header_len-2 to
+    // underflow (size_t) and read far out of bounds.
+    if(m_header_len < 2 ||
+       (m_header_buf[m_header_len - 2] != '\r') ||
        (m_header_buf[m_header_len - 1] != '\n')) {
         boost::system::error_code eproto(boost::system::errc::errc_t::protocol_error,
                                          boost::system::system_category());

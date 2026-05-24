@@ -174,11 +174,19 @@ void Class::add_inherited_field(Class* parent, Field* field)
         m_fields.push_back(field);
     } else {
         // Note: Iterate in reverse because fields added later are more likely to be at the end
+        bool inserted = false;
         for(auto it = m_fields.rbegin(); it != m_fields.rend(); ++it) {
             if((*it)->get_id() < field->get_id()) {
                 m_fields.insert(it.base(), field);
+                inserted = true;
                 break;
             }
+        }
+        // If the new field's id is smaller than every existing field's id,
+        // it must be inserted at the front to keep m_fields consistent with
+        // m_fields_by_id / m_fields_by_name.
+        if(!inserted) {
+            m_fields.insert(m_fields.begin(), field);
         }
     }
 

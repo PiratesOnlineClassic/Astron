@@ -64,7 +64,7 @@ bool MolecularField::add_field(Field* field)
         // If any atomic field of the molecular has a default value,
         // the molecular is also considerd to have a default value.
         if(field->has_default_value()) {
-            m_default_value = true;
+            m_has_default_value = true;
         }
 
         m_default_value += field->get_default_value();
