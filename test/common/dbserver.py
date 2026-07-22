@@ -1301,7 +1301,11 @@ class DBServerTestsuite(object):
         def add_fields_to_complex(dg):
             array_length = 5
             dg.add_size(array_length * 3 * 4) # Byte size of named array
-            for i in xrange(array_length + 3): # Variable length array followed by fixed
+            try:
+                _xrange = xrange
+            except NameError:
+                _xrange = range
+            for i in _xrange(array_length + 3): # Variable length array followed by fixed
                 # Each of these is a "Block" struct, which consists of 3 uint32s:
                 dg.add_uint32((i<<17) + ord('x'))
                 dg.add_uint32((i<<17) + ord('y'))

@@ -1,7 +1,46 @@
-import os, time, socket, struct, tempfile, subprocess, ssl
+import os, sys, time, socket, struct, tempfile, subprocess, ssl
 
 __all__ = ['Daemon', 'Datagram', 'DatagramIterator',
            'MDConnection', 'ChannelConnection', 'ClientConnection']
+
+# Py2/Py3 compatibility for the binary test harness.
+if sys.version_info[0] >= 3:
+    xrange = range
+    raw_input = input
+    _integer_types = (int,)
+    _text_type = str
+    _binary_type = bytes
+
+    def _byte_at(data, index=0):
+        return data[index]
+
+    def _as_bytes(value):
+        if isinstance(value, _binary_type):
+            return value
+        if isinstance(value, bytearray):
+            return bytes(value)
+        if isinstance(value, memoryview):
+            return value.tobytes()
+        if isinstance(value, _text_type):
+            # Treat text as latin-1 so byte values 0x00-0xff stay 1:1.
+            return value.encode('latin-1')
+        raise TypeError('Expected bytes-like or str, got %r' % (type(value).__name__,))
+else:
+    _integer_types = (int, long)
+    _text_type = unicode
+    _binary_type = str
+
+    def _byte_at(data, index=0):
+        return ord(data[index])
+
+    def _as_bytes(value):
+        if isinstance(value, _binary_type):
+            return value
+        if isinstance(value, bytearray):
+            return str(value)
+        if isinstance(value, _text_type):
+            return value.encode('latin-1')
+        raise TypeError('Expected bytes-like or unicode, got %r' % (type(value).__name__,))
 
 class Daemon(object):
     DAEMON_PATH = './astrond'
@@ -17,14 +56,14 @@ class Daemon(object):
             # User wants to manually launch their Astron daemon, so we'll write
             # out the config for them and prompt them to
             with open(os.environ['MANUAL_LAUNCH_CONFIG'], 'wb') as config:
-                config.write(self.config)
+                config.write(_as_bytes(self.config))
 
             raw_input('Waiting for manual launch; press enter when ready...')
 
             return # Because the start happened manually.
 
         configHandle, self.config_file = tempfile.mkstemp(prefix = 'astron', suffix = 'cfg.yaml')
-        os.write(configHandle, self.config)
+        os.write(configHandle, _as_bytes(self.config))
         os.close(configHandle)
 
         args = [self.DAEMON_PATH]
@@ -280,11 +319,14 @@ __all__.extend(CONSTANTS.keys())
 
 class Datagram(object):
     def __init__(self, data=b''):
-        self._data = data
+        self._data = _as_bytes(data) if data else b''
 
-        def make_adder(v):
-            def adder(data):
-                self.add_raw(struct.pack(v, data))
+        def make_adder(fmt):
+            def adder(value):
+                # struct 's' requires a bytes object of the exact size.
+                if fmt.endswith('s') and not isinstance(value, _binary_type):
+                    value = _as_bytes(value)
+                self.add_raw(struct.pack(fmt, value))
             return adder
 
         for k,v in DATATYPES.items():
@@ -292,15 +334,18 @@ class Datagram(object):
             setattr(self, 'add_' + k, adder)
 
     def add_raw(self, data):
-        self._data += data
+        self._data += _as_bytes(data)
 
     def add_string(self, string):
-        self.add_size(len(string))
-        self.add_raw(string)
+        # Length prefix is always the on-wire byte count.
+        data = _as_bytes(string)
+        self.add_size(len(data))
+        self.add_raw(data)
 
     def add_blob(self, blob):
-        self.add_size(len(blob))
-        self.add_raw(blob)
+        data = _as_bytes(blob)
+        self.add_size(len(data))
+        self.add_raw(data)
 
     def add_datagram(self, dg):
         self.add_dgsize(dg.get_size())
@@ -317,7 +362,7 @@ class Datagram(object):
         return self._data
 
     def get_payload(self):
-        return self._data[CHANNEL_SIZE_BYTES*ord(self._data[0])+1:]
+        return self._data[CHANNEL_SIZE_BYTES*_byte_at(self._data)+1:]
 
     def get_msgtype(self):
         return struct.unpack('<H', self.get_payload()[CHANNEL_SIZE_BYTES:CHANNEL_SIZE_BYTES+2])[0]
@@ -325,7 +370,7 @@ class Datagram(object):
     def get_channels(self):
         channels = []
         iterator = DatagramIterator(self, 1)
-        for x in xrange(ord(self._data[0])):
+        for x in xrange(_byte_at(self._data)):
             channels.append(iterator.read_channel())
         return set(channels)
 
@@ -446,7 +491,7 @@ class DatagramIterator(object):
             raise EOFError('End of Datagram')
 
         unpacked = struct.unpack(f, self._data[self._offset-offset:self._offset])
-        if len(unpacked) is 1:
+        if len(unpacked) == 1:
             return unpacked[0]
         else:
             return unpacked
@@ -464,7 +509,7 @@ class DatagramIterator(object):
         if len(channels) != len(recipients):
             return (False, "Recipients length doesn't match")
 
-        self.seek(CHANNEL_SIZE_BYTES*ord(self._data[0])+1)
+        self.seek(CHANNEL_SIZE_BYTES*_byte_at(self._data)+1)
         readSender = self.read_channel()
         if sender != readSender:
             return (False, "Sender doesn't match, %d != %d (expected, actual)"
@@ -488,6 +533,17 @@ class DatagramIterator(object):
             raise EOFError('End of Datagram')
 
         return struct.unpack("<%ds" % length, self._data[self._offset-length:self._offset])[0]
+
+    def read_blob(self):
+        return self.read_string()
+
+    def read_datagram(self):
+        # Nested datagrams use dgsize_t length + payload; advance past both.
+        length = self.read_dgsize()
+        self._offset += length
+        if self._offset > len(self._data):
+            raise EOFError('End of Datagram')
+        return Datagram(self._data[self._offset-length:self._offset])
 
     def read_remainder(self):
         remainder = self._data[self._offset:]
@@ -531,21 +587,21 @@ class MDConnection(object):
     def _read(self):
         try:
             length = DGSIZE_SIZE_BYTES
-            result = ''
+            result = b''
             while len(result) < length:
                 data = self.s.recv(length - len(result))
-                if data == '':
+                if not data:
                     raise EOFError('Remote socket closed connection')
                 result += data
             length = struct.unpack(DATATYPES['dgsize'], result)[0]
         except socket.error:
             return None
 
-        result = ''
+        result = b''
         while len(result) < length:
             data = self.s.recv(length - len(result))
-            if data == '':
-                    raise EOFError('Remote socket closed connection')
+            if not data:
+                raise EOFError('Remote socket closed connection')
             result += data
 
         return result
@@ -592,7 +648,7 @@ class ClientConnection(MDConnection):
         while datagrams:
             dg = self._read()
             if dg is None:
-                if numIn is 0:
+                if numIn == 0:
                     return (False, "No datagram received.")
                 else:
                     return (False, "Only received " + str(numIn) + " datagrams, but expected " + str(numE))

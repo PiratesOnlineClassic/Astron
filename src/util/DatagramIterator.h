@@ -211,10 +211,15 @@ class DatagramIterator
     }
 
     // read_datagram reads a blob from the datagram and returns it as another datagram.
+    // Format: {dgsize_t length; uint8[length] payload}. Must advance m_offset
+    // past the payload or subsequent fields appear truncated/desynced.
     DatagramPtr read_datagram()
     {
         dgsize_t length = read_dgsize();
-        return Datagram::create(m_dg->get_data() + m_offset, length);
+        check_read_length(length);
+        DatagramPtr result = Datagram::create(m_dg->get_data() + m_offset, length);
+        m_offset += length;
+        return result;
     }
 
     // read_data returns the next <length> bytes in the datagram.

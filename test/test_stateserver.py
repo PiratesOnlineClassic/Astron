@@ -4,6 +4,11 @@ from common.unittests import ProtocolTest
 from common.astron import *
 from common.dcfile import *
 
+try:
+    xrange
+except NameError:
+    xrange = range
+
 CONFIG = """\
 messagedirector:
     bind: 127.0.0.1:57123

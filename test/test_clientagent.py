@@ -3387,16 +3387,28 @@ class TestClientAgent(ProtocolTest):
         self.server.flush()
         self.server.send(Datagram.create_add_channel(10010))
 
-        for test_id in xrange(8):
+        try:
+            _xrange = xrange
+        except NameError:
+            _xrange = range
+
+        def _unhex(hexstr):
+            try:
+                return hexstr.decode('hex')
+            except AttributeError:
+                import binascii
+                return binascii.unhexlify(hexstr)
+
+        for test_id in _xrange(8):
             proto_v2 = bool(test_id&1)
             ipv6 = bool(test_id&2)
             tls = bool(test_id&4)
 
             if ipv6:
                 source_ip = '2001:db8::1'
-                source_ip_bin = '20010db8000000000000000000000001'.decode('hex')
+                source_ip_bin = _unhex('20010db8000000000000000000000001')
                 dest_ip = '2001:db8:dead:beef::feed:1'
-                dest_ip_bin = '20010db8deadbeef00000000feed0001'.decode('hex')
+                dest_ip_bin = _unhex('20010db8deadbeef00000000feed0001')
             else:
                 source_ip = '203.0.113.5'
                 source_ip_bin = struct.pack('BBBB', 203, 0, 113, 5)
@@ -3409,12 +3421,14 @@ class TestClientAgent(ProtocolTest):
             if proto_v2:
                 body = (source_ip_bin + dest_ip_bin +
                         struct.pack('>HH', source_port, dest_port))
-                header = ('\r\n\r\n\0\r\nQUIT\n\x21' +
+                header = (b'\r\n\r\n\0\r\nQUIT\n\x21' +
                           struct.pack('>BH', 0x21 if ipv6 else 0x11, len(body)) +
                           body)
             else:
                 header = 'PROXY TCP{} {} {} {} {}\r\n'.format(
                     6 if ipv6 else 4, source_ip, dest_ip, source_port, dest_port)
+                if not isinstance(header, bytes):
+                    header = header.encode('ascii')
 
             if tls:
                 tls_context = {'ssl_version': ssl.PROTOCOL_TLSv1}
